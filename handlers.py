@@ -161,7 +161,17 @@ async def handle_barcode_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) ->
     return await _process_barcode(update, ctx, code)
 
 
-async def _process_barcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE, code: str) -> int | None:
+async def _process_barcode(
+    update: Update,
+    ctx: ContextTypes.DEFAULT_TYPE,
+    code: str,
+    grams_state: int = BARCODE_MANUAL_GRAMS,
+) -> int | None:
+    """
+    Look up a barcode and ask for grams.
+    grams_state — which ConversationHandler state to return after finding the product.
+    Pass LOG_GRAMS when called from inside log_conv so that conversation handles grams correctly.
+    """
     uid = update.effective_user.id
 
     # Check user's custom db first
@@ -180,13 +190,19 @@ async def _process_barcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE, code:
     if info:
         ctx.user_data["barcode_info"] = info
         ctx.user_data["barcode_code"] = code
+        # When called from log_conv, store as log_product too so log_grams handler works
+        if grams_state == LOG_GRAMS:
+            ctx.user_data["log_product"] = info["name"]
+            ctx.user_data["log_product_kbju"] = (
+                info["calories"], info["protein"], info["fat"], info["carbs"]
+            )
         text = (
             f"✅ *{info['name']}*\n"
             f"На 100г: {_kbju_text(info['calories'], info['protein'], info['fat'], info['carbs'])}\n\n"
             "Введите количество граммов чтобы добавить в дневник (или /cancel):"
         )
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-        return BARCODE_MANUAL_GRAMS
+        return grams_state
 
     # Not found
     ctx.user_data["barcode_code"] = code
@@ -203,6 +219,7 @@ async def _process_barcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE, code:
 
 
 async def barcode_grams_received(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
+    """Used by standalone barcode_conv (outside /log)."""
     grams = _parse_grams(update.message.text)
     if grams is None:
         await update.message.reply_text("Введите положительное число граммов:")
@@ -460,7 +477,7 @@ async def log_text_in_pick(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> in
 
     # Always treat digit-only strings as barcodes regardless of mode
     if re.fullmatch(r"\d{8,14}", text):
-        result = await _process_barcode(update, ctx, text)
+        result = await _process_barcode(update, ctx, text, grams_state=LOG_GRAMS)
         return result if result is not None else LOG_PICK
 
     if mode == "barcode":
@@ -502,6 +519,11 @@ async def log_grams(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
         fat = round(d["fat"] * factor, 1)
         carbs = round(d["carbs"] * factor, 1)
         name = d["name"]
+    elif "log_product_kbju" in ctx.user_data:
+        # Product came from barcode scan inside /log
+        name = ctx.user_data.get("log_product", "Продукт")
+        kbju = ctx.user_data["log_product_kbju"]
+        cal, prot, fat, carbs = prod.calc_kbju(kbju, grams)
     else:
         name = ctx.user_data.get("log_product", "Продукт")
         kbju = _product_kbju(uid, name)

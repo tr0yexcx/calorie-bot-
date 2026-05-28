@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import io
 import logging
 import os
@@ -100,12 +101,14 @@ def lookup_barcode(barcode: str) -> dict | None:
                     pass
         return 0.0
 
-    name = (
-        product.get("product_name_ru")
-        or product.get("product_name")
-        or product.get("generic_name")
-        or "Неизвестный продукт"
-    ).strip()
+    name = html.unescape(
+        (
+            product.get("product_name_ru")
+            or product.get("product_name")
+            or product.get("generic_name")
+            or "Неизвестный продукт"
+        ).strip()
+    )
 
     # Prefer kcal; fall back to kJ → kcal
     kcal = _get("energy-kcal")
