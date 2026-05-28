@@ -1,12 +1,11 @@
 [phases.setup]
-nixPkgs = ["python311", "zbar"]
+nixPkgs = ["zbar"]
 
 [phases.install]
 cmds = [
-  "python3 -m venv /opt/venv",
-  "/opt/venv/bin/pip install --upgrade pip",
-  "/opt/venv/bin/pip install -r requirements.txt"
+  "pip install --upgrade pip",
+  "pip install -r requirements.txt"
 ]
 
 [start]
-cmd = "/opt/venv/bin/python bot.py"
+cmd = "python bot.py"
