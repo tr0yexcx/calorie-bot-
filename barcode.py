@@ -66,7 +66,11 @@ def lookup_barcode(barcode: str) -> dict | None:
         or "Неизвестный продукт"
     )
 
-    calories = _get("energy-kcal") or _get("energy") / 4.184 if _get("energy") else 0.0
+    kcal = _get("energy-kcal")
+    if not kcal:
+        energy_kj = _get("energy")
+        kcal = round(energy_kj / 4.184, 1) if energy_kj else 0.0
+    calories = kcal
 
     return {
         "name": name,

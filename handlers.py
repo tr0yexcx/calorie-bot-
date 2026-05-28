@@ -458,10 +458,13 @@ async def log_text_in_pick(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> in
     mode = ctx.user_data.get("log_mode")
     uid = update.effective_user.id
 
+    # Always treat digit-only strings as barcodes regardless of mode
+    if re.fullmatch(r"\d{8,14}", text):
+        result = await _process_barcode(update, ctx, text)
+        return result if result is not None else LOG_PICK
+
     if mode == "barcode":
-        if re.fullmatch(r"\d{8,14}", text):
-            return await _process_barcode(update, ctx, text) or LOG_PICK
-        await update.message.reply_text("Введите корректный штрихкод (8-14 цифр):")
+        await update.message.reply_text("Введите корректный штрихкод (8-14 цифр) или отправьте фото:")
         return LOG_PICK
 
     # search mode
