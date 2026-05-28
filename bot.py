@@ -4,6 +4,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
+from telegram import BotCommand
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -34,6 +35,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+COMMANDS = [
+    BotCommand("log",         "🍽 Добавить приём пищи в дневник"),
+    BotCommand("today",       "📅 Дневник за сегодня + прогресс"),
+    BotCommand("week",        "📊 Сводка за 7 дней"),
+    BotCommand("month",       "📆 Сводка за 30 дней"),
+    BotCommand("find",        "🔍 Поиск продукта — /find курица"),
+    BotCommand("goal",        "🎯 Установить дневную норму КБЖУ"),
+    BotCommand("create_dish", "🍳 Конструктор блюд"),
+    BotCommand("my_dishes",   "📚 Мои сохранённые блюда"),
+    BotCommand("calc",        "🧮 Быстрый калькулятор КБЖУ"),
+    BotCommand("reset",       "🗑 Сбросить записи за сегодня"),
+    BotCommand("start",       "👋 Главное меню"),
+    BotCommand("cancel",      "❌ Отменить текущее действие"),
+]
+
+
+async def post_init(app: Application) -> None:
+    await app.bot.set_my_commands(COMMANDS)
+    logger.info("Меню команд установлено.")
+
 
 def main() -> None:
     token = os.getenv("BOT_TOKEN")
@@ -42,7 +63,7 @@ def main() -> None:
 
     db.init_db()
 
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).post_init(post_init).build()
 
     # ConversationHandlers (must come first — they catch photos/text too)
     for conv in build_conv_handlers():
