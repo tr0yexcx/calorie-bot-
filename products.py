@@ -2,9 +2,13 @@
 PRODUCTS_DB: dict[str, tuple[float, float, float, float]] = {
     # Meat & Poultry
     "курица грудка": (113, 23.6, 1.9, 0.4),
+    "куриная грудка": (113, 23.6, 1.9, 0.4),
+    "куриное филе": (113, 23.6, 1.9, 0.4),
     "курица бедро": (185, 18.9, 12.3, 0.0),
+    "куриное бедро": (185, 18.9, 12.3, 0.0),
     "курица целая": (165, 20.0, 9.0, 0.0),
     "индейка грудка": (84, 19.2, 0.7, 0.0),
+    "индейка филе": (84, 19.2, 0.7, 0.0),
     "говядина": (187, 18.9, 12.4, 0.0),
     "свинина": (259, 16.0, 21.7, 0.0),
     "свинина нежирная": (142, 19.4, 7.1, 0.0),
@@ -143,9 +147,14 @@ PRODUCTS_DB: dict[str, tuple[float, float, float, float]] = {
 
 def find_products(query: str) -> list[tuple[str, tuple[float, float, float, float]]]:
     query = query.lower().strip()
+    words = query.split()
     results = []
     for name, kbju in PRODUCTS_DB.items():
+        # Full phrase match scores higher
         if query in name:
+            results.insert(0, (name, kbju))
+        # Any single word match
+        elif any(w in name for w in words if len(w) >= 3):
             results.append((name, kbju))
     return results
 
